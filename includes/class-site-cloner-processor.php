@@ -96,10 +96,10 @@ class Site_Cloner_Processor {
             $this->log_message("URL final resolvida: $final_url");
             $this->update_progress(10);
             
-            // Fetch page content
-            $content = $this->fetch_page_content($final_url);
+            // Fetch page content with improved error handling
+            $content = $this->fetch_page_content_with_retry($final_url);
             if (!$content) {
-                throw new Exception('Não foi possível obter o conteúdo da página');
+                throw new Exception('Não foi possível obter o conteúdo da página após várias tentativas');
             }
             $this->log_message('Conteúdo da página obtido');
             $this->update_progress(20);
@@ -214,7 +214,7 @@ class Site_Cloner_Processor {
      * Set memory and execution limits
      */
     private function set_limits() {
-        $settings = get_option('site_cloner_settings', array());
+        $settings = $this->get_effective_settings();
         
         if (isset($settings['max_execution_time']) && $settings['max_execution_time'] > 0) {
             set_time_limit($settings['max_execution_time']);
@@ -226,28 +226,67 @@ class Site_Cloner_Processor {
     }
     
     /**
+     * Get effective settings (network settings override site settings)
+     */
+    private function get_effective_settings() {
+        $defaults = array(
+            'max_execution_time' => 300,
+            'memory_limit' => '512M',
+            'download_timeout' => 60,
+            'ssl_verify' => 0,
+            'follow_redirects' => 1,
+            'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'max_file_size' => 50
+        );
+        
+        $site_settings = get_option('site_cloner_settings', array());
+        
+        if (is_multisite()) {
+            $network_settings = get_site_option('site_cloner_network_settings', array());
+            // Network settings override site settings
+            $settings = wp_parse_args($network_settings, $site_settings);
+        } else {
+            $settings = $site_settings;
+        }
+        
+        return wp_parse_args($settings, $defaults);
+    }
+    
+    /**
      * Resolve final URL handling redirects
      */
     private function resolve_url($url) {
+        $settings = $this->get_effective_settings();
+        
+        if (!$settings['follow_redirects']) {
+            return $url;
+        }
+        
         $max_redirects = 10;
         $redirect_count = 0;
         $current_url = $url;
         
+        $this->log_message("Iniciando resolução de redirecionamentos para: $url");
+        
         while ($redirect_count < $max_redirects) {
-            $headers = get_headers($current_url, 1);
+            // Use wp_remote_head instead of get_headers for better WordPress integration
+            $response = wp_remote_head($current_url, array(
+                'timeout' => 30,
+                'redirection' => 0, // Don't follow redirects automatically
+                'user-agent' => $settings['user_agent'],
+                'sslverify' => $settings['ssl_verify']
+            ));
             
-            if (!$headers) {
+            if (is_wp_error($response)) {
+                $this->log_message("Erro ao verificar redirecionamentos: " . $response->get_error_message(), 'warning');
                 break;
             }
             
-            $status_code = intval(substr($headers[0], 9, 3));
+            $status_code = wp_remote_retrieve_response_code($response);
+            $this->log_message("Status code para $current_url: $status_code");
             
             if ($status_code >= 300 && $status_code < 400) {
-                $location = isset($headers['Location']) ? $headers['Location'] : null;
-                
-                if (is_array($location)) {
-                    $location = end($location);
-                }
+                $location = wp_remote_retrieve_header($response, 'location');
                 
                 if ($location) {
                     if (!parse_url($location, PHP_URL_HOST)) {
@@ -255,6 +294,7 @@ class Site_Cloner_Processor {
                         $parsed_url = parse_url($current_url);
                         $location = $parsed_url['scheme'] . '://' . $parsed_url['host'] . $location;
                     }
+                    $this->log_message("Redirecionamento detectado: $current_url -> $location");
                     $current_url = $location;
                     $redirect_count++;
                 } else {
@@ -265,36 +305,123 @@ class Site_Cloner_Processor {
             }
         }
         
+        if ($redirect_count > 0) {
+            $this->log_message("URL final após $redirect_count redirecionamentos: $current_url");
+        }
+        
         return $current_url;
     }
     
     /**
-     * Fetch page content
+     * Fetch page content with retry logic
      */
-    private function fetch_page_content($url) {
-        $args = array(
-            'timeout' => 60,
-            'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'headers' => array(
-                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language' => 'en-US,en;q=0.5',
-                'Accept-Encoding' => 'gzip, deflate',
-                'Connection' => 'keep-alive',
+    private function fetch_page_content_with_retry($url, $max_attempts = 3) {
+        $settings = $this->get_effective_settings();
+        
+        for ($attempt = 1; $attempt <= $max_attempts; $attempt++) {
+            $this->log_message("Tentativa $attempt de $max_attempts para buscar conteúdo de: $url");
+            
+            try {
+                $content = $this->fetch_page_content($url, $attempt);
+                if ($content) {
+                    $this->log_message("Conteúdo obtido com sucesso na tentativa $attempt");
+                    return $content;
+                }
+            } catch (Exception $e) {
+                $this->log_message("Tentativa $attempt falhou: " . $e->getMessage(), 'warning');
+                
+                if ($attempt < $max_attempts) {
+                    // Wait before retry (exponential backoff)
+                    $wait_time = pow(2, $attempt - 1);
+                    $this->log_message("Aguardando {$wait_time}s antes da próxima tentativa");
+                    sleep($wait_time);
+                }
+            }
+        }
+        
+        throw new Exception("Falha ao obter conteúdo após $max_attempts tentativas");
+    }
+    
+    /**
+     * Fetch page content with improved error handling
+     */
+    private function fetch_page_content($url, $attempt = 1) {
+        $settings = $this->get_effective_settings();
+        
+        // Different configurations for different attempts
+        $configs = array(
+            1 => array( // First attempt - standard
+                'sslverify' => $settings['ssl_verify'],
+                'sslversion' => CURL_SSLVERSION_DEFAULT
+            ),
+            2 => array( // Second attempt - disable SSL verification
+                'sslverify' => false,
+                'sslversion' => CURL_SSLVERSION_TLSv1_2
+            ),
+            3 => array( // Third attempt - most permissive
+                'sslverify' => false,
+                'sslversion' => CURL_SSLVERSION_DEFAULT
             )
         );
         
+        $config = isset($configs[$attempt]) ? $configs[$attempt] : $configs[3];
+        
+        $args = array(
+            'timeout' => $settings['download_timeout'],
+            'user-agent' => $settings['user_agent'],
+            'headers' => array(
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language' => 'pt-BR,pt;q=0.9,en;q=0.8',
+                'Accept-Encoding' => 'gzip, deflate, br',
+                'Connection' => 'keep-alive',
+                'Upgrade-Insecure-Requests' => '1',
+                'Sec-Fetch-Dest' => 'document',
+                'Sec-Fetch-Mode' => 'navigate',
+                'Sec-Fetch-Site' => 'none',
+                'Cache-Control' => 'max-age=0'
+            ),
+            'sslverify' => $config['sslverify'],
+            'redirection' => $settings['follow_redirects'] ? 5 : 0
+        );
+        
+        // Add SSL version for cURL if specified
+        if (isset($config['sslversion'])) {
+            add_action('http_api_curl', function($handle) use ($config) {
+                curl_setopt($handle, CURLOPT_SSLVERSION, $config['sslversion']);
+                curl_setopt($handle, CURLOPT_SSL_CIPHER_LIST, 'DEFAULT:!DH');
+            });
+        }
+        
+        $this->log_message("Configurações da tentativa $attempt: SSL verify=" . ($config['sslverify'] ? 'true' : 'false'));
+        
         $response = wp_remote_get($url, $args);
         
+        // Remove the curl action
+        remove_all_actions('http_api_curl');
+        
         if (is_wp_error($response)) {
-            throw new Exception('Erro ao buscar conteúdo: ' . $response->get_error_message());
+            $error_message = $response->get_error_message();
+            $this->log_message("Erro na requisição: $error_message", 'error');
+            throw new Exception('Erro ao buscar conteúdo: ' . $error_message);
         }
         
         $status_code = wp_remote_retrieve_response_code($response);
+        $this->log_message("Status HTTP: $status_code");
+        
         if ($status_code !== 200) {
             throw new Exception("Erro HTTP: $status_code");
         }
         
-        return wp_remote_retrieve_body($response);
+        $body = wp_remote_retrieve_body($response);
+        
+        if (empty($body)) {
+            throw new Exception("Conteúdo vazio retornado");
+        }
+        
+        $content_length = strlen($body);
+        $this->log_message("Conteúdo obtido: $content_length bytes");
+        
+        return $body;
     }
     
     /**

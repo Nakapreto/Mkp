@@ -331,17 +331,50 @@ class Site_Cloner_Assets {
     }
     
     /**
+     * Get effective settings (network settings override site settings)
+     */
+    private function get_effective_settings() {
+        $defaults = array(
+            'max_execution_time' => 300,
+            'memory_limit' => '512M',
+            'download_timeout' => 60,
+            'ssl_verify' => 0,
+            'follow_redirects' => 1,
+            'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'max_file_size' => 50
+        );
+        
+        $site_settings = get_option('site_cloner_settings', array());
+        
+        if (is_multisite()) {
+            $network_settings = get_site_option('site_cloner_network_settings', array());
+            // Network settings override site settings
+            $settings = wp_parse_args($network_settings, $site_settings);
+        } else {
+            $settings = $site_settings;
+        }
+        
+        return wp_parse_args($settings, $defaults);
+    }
+    
+    /**
      * Check file size before downloading
      */
     private function check_file_size($url) {
-        $settings = get_option('site_cloner_settings', array());
-        $max_size = isset($settings['max_file_size']) ? $settings['max_file_size'] * 1024 * 1024 : 50 * 1024 * 1024; // Default 50MB
+        $settings = $this->get_effective_settings();
+        $max_size = $settings['max_file_size'] * 1024 * 1024; // Convert MB to bytes
         
-        $headers = get_headers($url, 1);
+        $response = wp_remote_head($url, array(
+            'timeout' => 30,
+            'user-agent' => $settings['user_agent'],
+            'sslverify' => $settings['ssl_verify']
+        ));
         
-        if (isset($headers['Content-Length'])) {
-            $size = is_array($headers['Content-Length']) ? end($headers['Content-Length']) : $headers['Content-Length'];
-            return intval($size) <= $max_size;
+        if (!is_wp_error($response)) {
+            $content_length = wp_remote_retrieve_header($response, 'content-length');
+            if ($content_length) {
+                return intval($content_length) <= $max_size;
+            }
         }
         
         return true; // If we can't determine size, proceed
@@ -351,12 +384,20 @@ class Site_Cloner_Assets {
      * Download file
      */
     private function download_file($url) {
-        $settings = get_option('site_cloner_settings', array());
-        $timeout = isset($settings['download_timeout']) ? $settings['download_timeout'] : 60;
+        $settings = $this->get_effective_settings();
         
         $args = array(
-            'timeout' => $timeout,
-            'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'timeout' => $settings['download_timeout'],
+            'user-agent' => $settings['user_agent'],
+            'sslverify' => $settings['ssl_verify'],
+            'headers' => array(
+                'Accept' => '*/*',
+                'Accept-Language' => 'pt-BR,pt;q=0.9,en;q=0.8',
+                'Accept-Encoding' => 'gzip, deflate, br',
+                'Connection' => 'keep-alive',
+                'Cache-Control' => 'max-age=0'
+            ),
+            'redirection' => $settings['follow_redirects'] ? 5 : 0
         );
         
         $response = wp_remote_get($url, $args);

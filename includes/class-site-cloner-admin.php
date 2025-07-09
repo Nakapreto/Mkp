@@ -16,15 +16,22 @@ class Site_Cloner_Admin {
      * Constructor
      */
     public function __construct() {
-        add_action('admin_menu', array($this, 'admin_menu'));
-        add_action('network_admin_menu', array($this, 'network_admin_menu'));
+        // Only add network menu if we're in network admin
+        if (is_network_admin()) {
+            add_action('network_admin_menu', array($this, 'network_admin_menu'));
+        } else {
+            // Only add regular menu if we're NOT in network admin
+            add_action('admin_menu', array($this, 'admin_menu'));
+        }
+        
         add_action('admin_init', array($this, 'admin_init'));
     }
     
     /**
-     * Add admin menu
+     * Add admin menu for individual sites
      */
     public function admin_menu() {
+        // Main menu page
         add_menu_page(
             __('Site Cloner', 'site-cloner'),
             __('Site Cloner', 'site-cloner'),
@@ -35,6 +42,7 @@ class Site_Cloner_Admin {
             30
         );
         
+        // Clone Site submenu
         add_submenu_page(
             'site-cloner',
             __('Clone Site', 'site-cloner'),
@@ -44,6 +52,7 @@ class Site_Cloner_Admin {
             array($this, 'admin_page')
         );
         
+        // Import ZIP submenu
         add_submenu_page(
             'site-cloner',
             __('Import ZIP', 'site-cloner'),
@@ -53,6 +62,7 @@ class Site_Cloner_Admin {
             array($this, 'import_page')
         );
         
+        // Status submenu
         add_submenu_page(
             'site-cloner',
             __('Status', 'site-cloner'),
@@ -62,31 +72,57 @@ class Site_Cloner_Admin {
             array($this, 'status_page')
         );
         
-        add_submenu_page(
-            'site-cloner',
-            __('Configurações', 'site-cloner'),
-            __('Configurações', 'site-cloner'),
-            'manage_options',
-            'site-cloner-settings',
-            array($this, 'settings_page')
-        );
+        // Only show settings for super admins or if not multisite
+        if (!is_multisite() || is_super_admin()) {
+            add_submenu_page(
+                'site-cloner',
+                __('Configurações', 'site-cloner'),
+                __('Configurações', 'site-cloner'),
+                is_multisite() ? 'manage_network' : 'manage_options',
+                'site-cloner-settings',
+                array($this, 'settings_page')
+            );
+        }
     }
     
     /**
      * Add network admin menu for multisite
      */
     public function network_admin_menu() {
-        if (is_multisite()) {
-            add_menu_page(
-                __('Site Cloner', 'site-cloner'),
-                __('Site Cloner', 'site-cloner'),
-                'manage_network',
-                'site-cloner-network',
-                array($this, 'network_page'),
-                'dashicons-download',
-                30
-            );
+        if (!is_multisite()) {
+            return;
         }
+        
+        // Main network menu
+        add_menu_page(
+            __('Site Cloner Network', 'site-cloner'),
+            __('Site Cloner', 'site-cloner'),
+            'manage_network',
+            'site-cloner-network',
+            array($this, 'network_page'),
+            'dashicons-download',
+            30
+        );
+        
+        // Network settings
+        add_submenu_page(
+            'site-cloner-network',
+            __('Configurações de Rede', 'site-cloner'),
+            __('Configurações', 'site-cloner'),
+            'manage_network',
+            'site-cloner-network-settings',
+            array($this, 'network_settings_page')
+        );
+        
+        // Network status
+        add_submenu_page(
+            'site-cloner-network',
+            __('Status da Rede', 'site-cloner'),
+            __('Status da Rede', 'site-cloner'),
+            'manage_network',
+            'site-cloner-network-status',
+            array($this, 'network_status_page')
+        );
     }
     
     /**
@@ -95,6 +131,11 @@ class Site_Cloner_Admin {
     public function admin_init() {
         // Register settings
         register_setting('site_cloner_settings', 'site_cloner_settings');
+        
+        // Register network settings
+        if (is_multisite()) {
+            register_setting('site_cloner_network_settings', 'site_cloner_network_settings');
+        }
     }
     
     /**
@@ -350,9 +391,14 @@ class Site_Cloner_Admin {
     }
     
     /**
-     * Settings page
+     * Settings page (for individual sites or super admins)
      */
     public function settings_page() {
+        // Check permissions
+        if (is_multisite() && !is_super_admin()) {
+            wp_die(__('Acesso negado. Apenas super administradores podem acessar as configurações.', 'site-cloner'));
+        }
+        
         if (isset($_POST['submit'])) {
             check_admin_referer('site_cloner_settings', 'site_cloner_settings_nonce');
             
@@ -362,7 +408,10 @@ class Site_Cloner_Admin {
                 'download_timeout' => intval($_POST['download_timeout']),
                 'elementor_support' => isset($_POST['elementor_support']) ? 1 : 0,
                 'multisite_support' => isset($_POST['multisite_support']) ? 1 : 0,
-                'max_file_size' => intval($_POST['max_file_size'])
+                'max_file_size' => intval($_POST['max_file_size']),
+                'ssl_verify' => isset($_POST['ssl_verify']) ? 1 : 0,
+                'follow_redirects' => isset($_POST['follow_redirects']) ? 1 : 0,
+                'user_agent' => sanitize_text_field($_POST['user_agent'])
             );
             
             update_option('site_cloner_settings', $settings);
@@ -376,12 +425,15 @@ class Site_Cloner_Admin {
             'download_timeout' => 60,
             'elementor_support' => 1,
             'multisite_support' => 1,
-            'max_file_size' => 50
+            'max_file_size' => 50,
+            'ssl_verify' => 0,
+            'follow_redirects' => 1,
+            'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         );
         $settings = wp_parse_args($settings, $defaults);
         
         ?>
-        <div class="wrap">
+        <div class="wrap site-cloner-settings">
             <h1><?php _e('Configurações do Site Cloner', 'site-cloner'); ?></h1>
             
             <form method="post" action="">
@@ -430,6 +482,35 @@ class Site_Cloner_Admin {
                         </tr>
                         
                         <tr>
+                            <th scope="row">
+                                <label for="user_agent"><?php _e('User Agent', 'site-cloner'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" name="user_agent" id="user_agent" value="<?php echo esc_attr($settings['user_agent']); ?>" class="regular-text">
+                                <p class="description"><?php _e('User Agent usado nas requisições HTTP', 'site-cloner'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row"><?php _e('Opções de Conexão', 'site-cloner'); ?></th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        <input type="checkbox" name="ssl_verify" value="1" <?php checked($settings['ssl_verify'], 1); ?>>
+                                        <?php _e('Verificar certificados SSL', 'site-cloner'); ?>
+                                    </label>
+                                    <p class="description"><?php _e('Desabilitar para sites com certificados SSL inválidos', 'site-cloner'); ?></p>
+                                    
+                                    <label>
+                                        <input type="checkbox" name="follow_redirects" value="1" <?php checked($settings['follow_redirects'], 1); ?>>
+                                        <?php _e('Seguir redirecionamentos automaticamente', 'site-cloner'); ?>
+                                    </label>
+                                    <p class="description"><?php _e('Permite seguir redirecionamentos 301/302', 'site-cloner'); ?></p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        
+                        <tr>
                             <th scope="row"><?php _e('Opções Avançadas', 'site-cloner'); ?></th>
                             <td>
                                 <fieldset>
@@ -459,8 +540,208 @@ class Site_Cloner_Admin {
     public function network_page() {
         ?>
         <div class="wrap">
-            <h1><?php _e('Site Cloner - Configuração de Rede', 'site-cloner'); ?></h1>
-            <p><?php _e('Configurações para toda a rede do multisite.', 'site-cloner'); ?></p>
+            <h1><?php _e('Site Cloner - Administração de Rede', 'site-cloner'); ?></h1>
+            
+            <div class="site-cloner-container">
+                <div class="card">
+                    <h2><?php _e('Configuração da Rede', 'site-cloner'); ?></h2>
+                    <p><?php _e('Configurações centralizadas para toda a rede do multisite.', 'site-cloner'); ?></p>
+                    
+                    <h3><?php _e('Acesso Rápido', 'site-cloner'); ?></h3>
+                    <ul>
+                        <li><a href="<?php echo network_admin_url('admin.php?page=site-cloner-network-settings'); ?>"><?php _e('Configurações de Rede', 'site-cloner'); ?></a></li>
+                        <li><a href="<?php echo network_admin_url('admin.php?page=site-cloner-network-status'); ?>"><?php _e('Status da Rede', 'site-cloner'); ?></a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Network settings page
+     */
+    public function network_settings_page() {
+        if (isset($_POST['submit'])) {
+            check_admin_referer('site_cloner_network_settings', 'site_cloner_network_nonce');
+            
+            $network_settings = array(
+                'max_execution_time' => intval($_POST['max_execution_time']),
+                'memory_limit' => sanitize_text_field($_POST['memory_limit']),
+                'download_timeout' => intval($_POST['download_timeout']),
+                'max_file_size' => intval($_POST['max_file_size']),
+                'ssl_verify' => isset($_POST['ssl_verify']) ? 1 : 0,
+                'follow_redirects' => isset($_POST['follow_redirects']) ? 1 : 0,
+                'user_agent' => sanitize_text_field($_POST['user_agent']),
+                'allow_site_settings' => isset($_POST['allow_site_settings']) ? 1 : 0
+            );
+            
+            update_site_option('site_cloner_network_settings', $network_settings);
+            echo '<div class="notice notice-success"><p>' . __('Configurações de rede salvas!', 'site-cloner') . '</p></div>';
+        }
+        
+        $network_settings = get_site_option('site_cloner_network_settings', array());
+        $defaults = array(
+            'max_execution_time' => 300,
+            'memory_limit' => '512M',
+            'download_timeout' => 60,
+            'max_file_size' => 50,
+            'ssl_verify' => 0,
+            'follow_redirects' => 1,
+            'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'allow_site_settings' => 0
+        );
+        $network_settings = wp_parse_args($network_settings, $defaults);
+        
+        ?>
+        <div class="wrap site-cloner-settings">
+            <h1><?php _e('Configurações de Rede - Site Cloner', 'site-cloner'); ?></h1>
+            
+            <form method="post" action="">
+                <?php wp_nonce_field('site_cloner_network_settings', 'site_cloner_network_nonce'); ?>
+                
+                <table class="form-table">
+                    <tbody>
+                        <tr>
+                            <th scope="row">
+                                <label for="max_execution_time"><?php _e('Tempo Máximo de Execução (segundos)', 'site-cloner'); ?></label>
+                            </th>
+                            <td>
+                                <input type="number" name="max_execution_time" id="max_execution_time" value="<?php echo esc_attr($network_settings['max_execution_time']); ?>" class="small-text">
+                                <p class="description"><?php _e('Tempo máximo para executar o clone em toda a rede', 'site-cloner'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="memory_limit"><?php _e('Limite de Memória', 'site-cloner'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" name="memory_limit" id="memory_limit" value="<?php echo esc_attr($network_settings['memory_limit']); ?>" class="small-text">
+                                <p class="description"><?php _e('Limite de memória para todos os sites da rede', 'site-cloner'); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="download_timeout"><?php _e('Timeout de Download (segundos)', 'site-cloner'); ?></label>
+                            </th>
+                            <td>
+                                <input type="number" name="download_timeout" id="download_timeout" value="<?php echo esc_attr($network_settings['download_timeout']); ?>" class="small-text">
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="max_file_size"><?php _e('Tamanho Máximo de Arquivo (MB)', 'site-cloner'); ?></label>
+                            </th>
+                            <td>
+                                <input type="number" name="max_file_size" id="max_file_size" value="<?php echo esc_attr($network_settings['max_file_size']); ?>" class="small-text">
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="user_agent"><?php _e('User Agent da Rede', 'site-cloner'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" name="user_agent" id="user_agent" value="<?php echo esc_attr($network_settings['user_agent']); ?>" class="regular-text">
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row"><?php _e('Opções de Conexão', 'site-cloner'); ?></th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        <input type="checkbox" name="ssl_verify" value="1" <?php checked($network_settings['ssl_verify'], 1); ?>>
+                                        <?php _e('Verificar certificados SSL', 'site-cloner'); ?>
+                                    </label><br>
+                                    <label>
+                                        <input type="checkbox" name="follow_redirects" value="1" <?php checked($network_settings['follow_redirects'], 1); ?>>
+                                        <?php _e('Seguir redirecionamentos automaticamente', 'site-cloner'); ?>
+                                    </label>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row"><?php _e('Permissões', 'site-cloner'); ?></th>
+                            <td>
+                                <fieldset>
+                                    <label>
+                                        <input type="checkbox" name="allow_site_settings" value="1" <?php checked($network_settings['allow_site_settings'], 1); ?>>
+                                        <?php _e('Permitir que administradores de sites alterem configurações', 'site-cloner'); ?>
+                                    </label>
+                                    <p class="description"><?php _e('Se desabilitado, apenas super administradores podem alterar configurações', 'site-cloner'); ?></p>
+                                </fieldset>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <?php submit_button(); ?>
+            </form>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Network status page
+     */
+    public function network_status_page() {
+        global $wpdb;
+        
+        // Get jobs from all sites in the network
+        $table_name = $wpdb->prefix . 'site_cloner_jobs';
+        $jobs = $wpdb->get_results("SELECT * FROM $table_name ORDER BY created_at DESC LIMIT 50");
+        
+        ?>
+        <div class="wrap">
+            <h1><?php _e('Status da Rede - Site Cloner', 'site-cloner'); ?></h1>
+            
+            <div class="card">
+                <h2><?php _e('Jobs de Toda a Rede', 'site-cloner'); ?></h2>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php _e('ID', 'site-cloner'); ?></th>
+                            <th><?php _e('Site', 'site-cloner'); ?></th>
+                            <th><?php _e('URL', 'site-cloner'); ?></th>
+                            <th><?php _e('Status', 'site-cloner'); ?></th>
+                            <th><?php _e('Progresso', 'site-cloner'); ?></th>
+                            <th><?php _e('Criado em', 'site-cloner'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if ($jobs): ?>
+                            <?php foreach ($jobs as $job): ?>
+                                <tr>
+                                    <td><?php echo esc_html($job->id); ?></td>
+                                    <td><?php echo esc_html(get_bloginfo('name')); ?></td>
+                                    <td><?php echo esc_html($job->url); ?></td>
+                                    <td>
+                                        <span class="status-<?php echo esc_attr($job->status); ?>">
+                                            <?php echo esc_html(ucfirst($job->status)); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: <?php echo esc_attr($job->progress); ?>%"></div>
+                                        </div>
+                                        <?php echo esc_html($job->progress); ?>%
+                                    </td>
+                                    <td><?php echo esc_html($job->created_at); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="6"><?php _e('Nenhum job encontrado na rede', 'site-cloner'); ?></td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
         <?php
     }
