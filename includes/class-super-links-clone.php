@@ -31,6 +31,13 @@ class Super_Links_Clone {
         add_action('wp_ajax_slc_create_link', array($this, 'ajax_create_link'));
         add_action('wp_ajax_slc_get_analytics', array($this, 'ajax_get_analytics'));
         add_action('wp_ajax_slc_import_links', array($this, 'ajax_import_links'));
+        add_action('wp_ajax_slc_get_link', array($this, 'ajax_get_link'));
+        add_action('wp_ajax_slc_update_link', array($this, 'ajax_update_link'));
+        add_action('wp_ajax_slc_reset_settings', array($this, 'ajax_reset_settings'));
+        add_action('wp_ajax_slc_clear_analytics', array($this, 'ajax_clear_analytics'));
+        add_action('wp_ajax_slc_export_analytics', array($this, 'ajax_export_analytics'));
+        add_action('wp_ajax_slc_preview_import', array($this, 'ajax_preview_import'));
+        add_action('wp_ajax_slc_download_csv_template', array($this, 'ajax_download_csv_template'));
     }
     
     public function init_hooks() {
@@ -182,6 +189,140 @@ class Super_Links_Clone {
         $result = $link_manager->import_links($source);
         
         wp_send_json($result);
+    }
+    
+    public function ajax_get_link() {
+        check_ajax_referer('slc_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'super-links-clone'));
+        }
+        
+        global $wpdb;
+        $link_id = intval($_POST['link_id']);
+        
+        $link = $wpdb->get_row($wpdb->prepare("
+            SELECT * FROM {$wpdb->prefix}slc_links WHERE id = %d
+        ", $link_id));
+        
+        if ($link) {
+            wp_send_json_success($link);
+        } else {
+            wp_send_json_error(array('message' => __('Link não encontrado', 'super-links-clone')));
+        }
+    }
+    
+    public function ajax_update_link() {
+        check_ajax_referer('slc_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'super-links-clone'));
+        }
+        
+        $link_manager = new SLC_Link_Manager();
+        $result = $link_manager->update_link($_POST);
+        
+        wp_send_json($result);
+    }
+    
+    public function ajax_reset_settings() {
+        check_ajax_referer('slc_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'super-links-clone'));
+        }
+        
+        // Reset to default options
+        $defaults = array(
+            'slc_link_prefix' => 'go',
+            'slc_enable_cookie_tracking' => 1,
+            'slc_enable_smart_links' => 0,
+            'slc_enable_exit_redirect' => 0,
+            'slc_enable_facebook_clocker' => 0,
+            'slc_default_redirect_type' => '301',
+            'slc_enable_analytics' => 1,
+            'slc_popup_enabled' => 0,
+            'slc_popup_delay' => 5000,
+            'slc_popup_content' => '',
+            'slc_exit_redirect_url' => '',
+            'slc_smart_keywords' => ''
+        );
+        
+        foreach ($defaults as $option => $value) {
+            update_option($option, $value);
+        }
+        
+        wp_send_json_success(array('message' => __('Configurações restauradas com sucesso!', 'super-links-clone')));
+    }
+    
+    public function ajax_clear_analytics() {
+        check_ajax_referer('slc_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'super-links-clone'));
+        }
+        
+        global $wpdb;
+        
+        // Clear analytics table
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}slc_analytics");
+        
+        // Reset click counts
+        $wpdb->update(
+            $wpdb->prefix . 'slc_links',
+            array('clicks' => 0, 'unique_clicks' => 0),
+            array(),
+            array('%d', '%d')
+        );
+        
+        wp_send_json_success(array('message' => __('Analytics limpos com sucesso!', 'super-links-clone')));
+    }
+    
+    public function ajax_export_analytics() {
+        check_ajax_referer('slc_export_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'super-links-clone'));
+        }
+        
+        $analytics = new SLC_Analytics();
+        $link_id = isset($_GET['link_id']) ? intval($_GET['link_id']) : 0;
+        $format = isset($_GET['format']) ? sanitize_text_field($_GET['format']) : 'csv';
+        
+        $analytics->export_data($link_id, $format);
+    }
+    
+    public function ajax_preview_import() {
+        check_ajax_referer('slc_import_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'super-links-clone'));
+        }
+        
+        $source = sanitize_text_field($_POST['source']);
+        $link_manager = new SLC_Link_Manager();
+        $result = $link_manager->preview_import($source);
+        
+        wp_send_json($result);
+    }
+    
+    public function ajax_download_csv_template() {
+        check_ajax_referer('slc_csv_template', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'super-links-clone'));
+        }
+        
+        $csv_content = "title,slug,target_url,redirect_type,category\n";
+        $csv_content .= "Meu Link de Exemplo,exemplo,https://example.com,301,categoria1\n";
+        $csv_content .= "Outro Link,outro,https://google.com,302,categoria2\n";
+        
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="super-links-template.csv"');
+        header('Content-Length: ' . strlen($csv_content));
+        
+        echo $csv_content;
+        exit;
     }
     
     // Static methods for activation/deactivation
