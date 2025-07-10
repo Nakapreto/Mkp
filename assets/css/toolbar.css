@@ -1,0 +1,310 @@
+/**
+ * Toolbar Styles for MKP Super Links
+ * 
+ * @package MKPSuperLinks
+ * @version 1.0.0
+ */
+
+/* Main Super Links Menu */
+#wp-admin-bar-mkp-super-links .ab-item {
+    color: #eee !important;
+}
+
+#wp-admin-bar-mkp-super-links .ab-icon:before {
+    content: '\f103';
+    top: 2px;
+}
+
+#wp-admin-bar-mkp-super-links:hover .ab-item {
+    color: #00b9eb !important;
+    background-color: #464646 !important;
+}
+
+/* Network Menu */
+#wp-admin-bar-mkp-network .ab-item {
+    color: #eee !important;
+}
+
+#wp-admin-bar-mkp-network .ab-icon:before {
+    content: '\f325';
+    top: 2px;
+}
+
+#wp-admin-bar-mkp-network:hover .ab-item {
+    color: #00b9eb !important;
+    background-color: #464646 !important;
+}
+
+/* Site Tools Menu */
+#wp-admin-bar-mkp-site .ab-item {
+    color: #eee !important;
+}
+
+#wp-admin-bar-mkp-site .ab-icon:before {
+    content: '\f102';
+    top: 2px;
+}
+
+#wp-admin-bar-mkp-site:hover .ab-item {
+    color: #00b9eb !important;
+    background-color: #464646 !important;
+}
+
+/* Utilities Menu */
+#wp-admin-bar-mkp-utilities .ab-item {
+    color: #eee !important;
+}
+
+#wp-admin-bar-mkp-utilities .ab-icon:before {
+    content: '\f107';
+    top: 2px;
+}
+
+#wp-admin-bar-mkp-utilities:hover .ab-item {
+    color: #00b9eb !important;
+    background-color: #464646 !important;
+}
+
+/* Submenu Items */
+#wp-admin-bar-mkp-super-links .ab-submenu .ab-item,
+#wp-admin-bar-mkp-network .ab-submenu .ab-item,
+#wp-admin-bar-mkp-site .ab-submenu .ab-item,
+#wp-admin-bar-mkp-utilities .ab-submenu .ab-item {
+    padding-left: 30px;
+}
+
+#wp-admin-bar-mkp-super-links .ab-submenu .dashicons,
+#wp-admin-bar-mkp-network .ab-submenu .dashicons,
+#wp-admin-bar-mkp-site .ab-submenu .dashicons,
+#wp-admin-bar-mkp-utilities .ab-submenu .dashicons {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    margin-right: 5px;
+    vertical-align: text-top;
+}
+
+/* Hover Effects */
+#wp-admin-bar-mkp-super-links .ab-submenu .ab-item:hover,
+#wp-admin-bar-mkp-network .ab-submenu .ab-item:hover,
+#wp-admin-bar-mkp-site .ab-submenu .ab-item:hover,
+#wp-admin-bar-mkp-utilities .ab-submenu .ab-item:hover {
+    color: #00b9eb !important;
+    background-color: #464646 !important;
+}
+
+/* Separators */
+#wp-admin-bar-mkp-separator-1,
+#wp-admin-bar-mkp-network-separator,
+#wp-admin-bar-mkp-site-separator {
+    height: 1px;
+    margin: 5px 0;
+    background: #464646;
+}
+
+/* Site Search Box */
+#mkp-site-search-box {
+    padding: 8px 12px;
+}
+
+#mkp-site-search-box input[type="text"] {
+    background: #464646;
+    border: 1px solid #606060;
+    color: #eee;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+#mkp-site-search-box input[type="text"]:focus {
+    background: #525252;
+    border-color: #00b9eb;
+    box-shadow: 0 0 0 1px #00b9eb;
+    outline: none;
+}
+
+#mkp-site-search-box input[type="text"]::placeholder {
+    color: #a0a5aa;
+}
+
+/* Mobile Styles */
+@media screen and (max-width: 782px) {
+    #wp-admin-bar-mkp-super-links .ab-label,
+    #wp-admin-bar-mkp-network .ab-label,
+    #wp-admin-bar-mkp-site .ab-label,
+    #wp-admin-bar-mkp-utilities .ab-label {
+        display: none;
+    }
+    
+    #wp-admin-bar-mkp-super-links .ab-icon,
+    #wp-admin-bar-mkp-network .ab-icon,
+    #wp-admin-bar-mkp-site .ab-icon,
+    #wp-admin-bar-mkp-utilities .ab-icon {
+        width: auto;
+        margin-right: 0;
+    }
+    
+    #mkp-site-search-box input[type="text"] {
+        width: 180px;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    #wp-admin-bar-mkp-super-links .ab-item,
+    #wp-admin-bar-mkp-network .ab-item,
+    #wp-admin-bar-mkp-site .ab-item,
+    #wp-admin-bar-mkp-utilities .ab-item {
+        color: #fff !important;
+    }
+    
+    #wp-admin-bar-mkp-super-links:hover .ab-item,
+    #wp-admin-bar-mkp-network:hover .ab-item,
+    #wp-admin-bar-mkp-site:hover .ab-item,
+    #wp-admin-bar-mkp-utilities:hover .ab-item {
+        background-color: #000 !important;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    #mkp-site-search-box input[type="text"] {
+        background: #3c434a;
+        border-color: #5a6269;
+        color: #c3c4c7;
+    }
+    
+    #mkp-site-search-box input[type="text"]:focus {
+        background: #464646;
+        border-color: #72aee6;
+        box-shadow: 0 0 0 1px #72aee6;
+    }
+}
+
+/* Right-to-Left Support */
+body.rtl #wp-admin-bar-mkp-super-links .ab-submenu .ab-item,
+body.rtl #wp-admin-bar-mkp-network .ab-submenu .ab-item,
+body.rtl #wp-admin-bar-mkp-site .ab-submenu .ab-item,
+body.rtl #wp-admin-bar-mkp-utilities .ab-submenu .ab-item {
+    padding-left: 16px;
+    padding-right: 30px;
+}
+
+body.rtl #wp-admin-bar-mkp-super-links .ab-submenu .dashicons,
+body.rtl #wp-admin-bar-mkp-network .ab-submenu .dashicons,
+body.rtl #wp-admin-bar-mkp-site .ab-submenu .dashicons,
+body.rtl #wp-admin-bar-mkp-utilities .ab-submenu .dashicons {
+    margin-right: 0;
+    margin-left: 5px;
+}
+
+/* Loading State */
+.mkp-toolbar-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.mkp-toolbar-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid #00b9eb;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: mkp-toolbar-spin 1s linear infinite;
+}
+
+@keyframes mkp-toolbar-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Enhanced My Sites Menu */
+#wp-admin-bar-mkp-sites-overview .ab-item {
+    font-weight: 600;
+}
+
+#wp-admin-bar-mkp-sites-overview .dashicons {
+    color: #00b9eb;
+}
+
+/* Notification Badges */
+.mkp-notification-badge {
+    background: #d63638;
+    color: #fff;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 5px;
+    min-width: 16px;
+    text-align: center;
+    display: inline-block;
+}
+
+/* Keyboard Navigation */
+#wp-admin-bar-mkp-super-links .ab-item:focus,
+#wp-admin-bar-mkp-network .ab-item:focus,
+#wp-admin-bar-mkp-site .ab-item:focus,
+#wp-admin-bar-mkp-utilities .ab-item:focus {
+    color: #00b9eb !important;
+    background-color: #464646 !important;
+    box-shadow: inset 0 0 0 1px #00b9eb;
+}
+
+/* Print Styles */
+@media print {
+    #wp-admin-bar-mkp-super-links,
+    #wp-admin-bar-mkp-network,
+    #wp-admin-bar-mkp-site,
+    #wp-admin-bar-mkp-utilities {
+        display: none !important;
+    }
+}
+
+/* Custom Color Schemes */
+.admin-color-blue #wp-admin-bar-mkp-super-links:hover .ab-item,
+.admin-color-blue #wp-admin-bar-mkp-network:hover .ab-item,
+.admin-color-blue #wp-admin-bar-mkp-site:hover .ab-item,
+.admin-color-blue #wp-admin-bar-mkp-utilities:hover .ab-item {
+    color: #096484 !important;
+}
+
+.admin-color-coffee #wp-admin-bar-mkp-super-links:hover .ab-item,
+.admin-color-coffee #wp-admin-bar-mkp-network:hover .ab-item,
+.admin-color-coffee #wp-admin-bar-mkp-site:hover .ab-item,
+.admin-color-coffee #wp-admin-bar-mkp-utilities:hover .ab-item {
+    color: #c7a589 !important;
+}
+
+.admin-color-ectoplasm #wp-admin-bar-mkp-super-links:hover .ab-item,
+.admin-color-ectoplasm #wp-admin-bar-mkp-network:hover .ab-item,
+.admin-color-ectoplasm #wp-admin-bar-mkp-site:hover .ab-item,
+.admin-color-ectoplasm #wp-admin-bar-mkp-utilities:hover .ab-item {
+    color: #a3b745 !important;
+}
+
+.admin-color-midnight #wp-admin-bar-mkp-super-links:hover .ab-item,
+.admin-color-midnight #wp-admin-bar-mkp-network:hover .ab-item,
+.admin-color-midnight #wp-admin-bar-mkp-site:hover .ab-item,
+.admin-color-midnight #wp-admin-bar-mkp-utilities:hover .ab-item {
+    color: #e14d43 !important;
+}
+
+.admin-color-ocean #wp-admin-bar-mkp-super-links:hover .ab-item,
+.admin-color-ocean #wp-admin-bar-mkp-network:hover .ab-item,
+.admin-color-ocean #wp-admin-bar-mkp-site:hover .ab-item,
+.admin-color-ocean #wp-admin-bar-mkp-utilities:hover .ab-item {
+    color: #9ebaa0 !important;
+}
+
+.admin-color-sunrise #wp-admin-bar-mkp-super-links:hover .ab-item,
+.admin-color-sunrise #wp-admin-bar-mkp-network:hover .ab-item,
+.admin-color-sunrise #wp-admin-bar-mkp-site:hover .ab-item,
+.admin-color-sunrise #wp-admin-bar-mkp-utilities:hover .ab-item {
+    color: #dd823b !important;
+}
