@@ -1,0 +1,582 @@
+/**
+ * MultiSite Super Links - Frontend CSS
+ * Estilos para o frontend (shortcodes, links inteligentes, etc.)
+ */
+
+/* Grid de links (shortcode) */
+.msl-links-grid {
+    display: grid;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.msl-columns-1 { grid-template-columns: 1fr; }
+.msl-columns-2 { grid-template-columns: repeat(2, 1fr); }
+.msl-columns-3 { grid-template-columns: repeat(3, 1fr); }
+.msl-columns-4 { grid-template-columns: repeat(4, 1fr); }
+.msl-columns-5 { grid-template-columns: repeat(5, 1fr); }
+.msl-columns-6 { grid-template-columns: repeat(6, 1fr); }
+
+.msl-link-item {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.msl-link-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-color: #007cba;
+}
+
+.msl-link-item h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.2em;
+    color: #333;
+}
+
+.msl-link-item h3 a {
+    text-decoration: none;
+    color: #007cba;
+    font-weight: 600;
+}
+
+.msl-link-item h3 a:hover {
+    color: #005a87;
+    text-decoration: underline;
+}
+
+.msl-description {
+    color: #666;
+    font-size: 0.9em;
+    line-height: 1.4;
+    margin-bottom: 10px;
+}
+
+.msl-stats {
+    font-size: 0.8em;
+    color: #999;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 10px;
+    margin-top: 10px;
+}
+
+/* Links inteligentes */
+.msl-intelligent-link {
+    color: #007cba;
+    text-decoration: underline;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.msl-intelligent-link:hover {
+    color: #005a87;
+    text-decoration: none;
+}
+
+.msl-intelligent-link:visited {
+    color: #5a6c7d;
+}
+
+/* Estilos especiais para diferentes tipos de links inteligentes */
+.msl-intelligent-link.msl-product-link {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.msl-intelligent-link.msl-product-link:hover {
+    background: linear-gradient(45deg, #ee5a24, #ff6b6b);
+    color: white;
+}
+
+.msl-intelligent-link.msl-category-link {
+    border-bottom: 2px solid #007cba;
+    text-decoration: none;
+    padding-bottom: 1px;
+}
+
+.msl-intelligent-link.msl-category-link:hover {
+    border-bottom-color: #005a87;
+    background: rgba(0, 124, 186, 0.1);
+}
+
+/* Loading states */
+.msl-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007cba;
+    border-radius: 50%;
+    animation: msl-spin 1s linear infinite;
+}
+
+@keyframes msl-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.msl-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* Modal de exit redirect */
+#msl-exit-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+}
+
+#msl-exit-modal {
+    background: white;
+    border-radius: 12px;
+    padding: 0;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    position: relative;
+    animation: msl-modal-appear 0.3s ease-out;
+    overflow: hidden;
+}
+
+@keyframes msl-modal-appear {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.msl-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    text-align: center;
+}
+
+.msl-modal-header h2 {
+    margin: 0;
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+.msl-modal-body {
+    padding: 25px;
+    text-align: center;
+}
+
+.msl-modal-body p {
+    font-size: 1.1em;
+    line-height: 1.5;
+    color: #555;
+    margin: 0 0 25px 0;
+}
+
+.msl-modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.msl-modal-btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    min-width: 120px;
+}
+
+.msl-modal-btn-primary {
+    background: #007cba;
+    color: white;
+}
+
+.msl-modal-btn-primary:hover {
+    background: #005a87;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 124, 186, 0.3);
+}
+
+.msl-modal-btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.msl-modal-btn-secondary:hover {
+    background: #545b62;
+    transform: translateY(-1px);
+}
+
+.msl-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.msl-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+/* Progress bar para countdown */
+.msl-progress-container {
+    margin-top: 20px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 6px;
+}
+
+.msl-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ff6b6b, #007cba);
+    border-radius: 10px;
+    transition: width 0.1s linear;
+}
+
+/* Animações de entrada para links inteligentes */
+@keyframes msl-link-highlight {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(0, 124, 186, 0.2); }
+    100% { background-color: transparent; }
+}
+
+.msl-intelligent-link.msl-just-added {
+    animation: msl-link-highlight 1s ease-in-out;
+}
+
+/* Tooltips para links */
+.msl-link-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.msl-link-tooltip .msl-tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px 12px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.msl-link-tooltip .msl-tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+.msl-link-tooltip:hover .msl-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Badges para categorias */
+.msl-category-badge {
+    display: inline-block;
+    background: #007cba;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7em;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 5px;
+}
+
+.msl-category-badge.msl-badge-hotmart { background: #ff4444; }
+.msl-category-badge.msl-badge-eduzz { background: #00aa44; }
+.msl-category-badge.msl-badge-monetizze { background: #ff8800; }
+
+/* Lista de links (modo lista) */
+.msl-links-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.msl-links-list li {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.msl-links-list li:hover {
+    border-color: #007cba;
+    box-shadow: 0 2px 8px rgba(0, 124, 186, 0.1);
+}
+
+.msl-link-info {
+    flex: 1;
+}
+
+.msl-link-title {
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 5px 0;
+}
+
+.msl-link-url {
+    font-size: 0.9em;
+    color: #666;
+    font-family: monospace;
+}
+
+.msl-link-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.msl-link-stats-mini {
+    font-size: 0.8em;
+    color: #999;
+    text-align: right;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .msl-columns-2,
+    .msl-columns-3,
+    .msl-columns-4,
+    .msl-columns-5,
+    .msl-columns-6 {
+        grid-template-columns: 1fr;
+    }
+    
+    .msl-link-item {
+        padding: 15px;
+    }
+    
+    #msl-exit-modal {
+        width: 95%;
+    }
+    
+    .msl-modal-buttons {
+        flex-direction: column;
+    }
+    
+    .msl-modal-btn {
+        width: 100%;
+    }
+    
+    .msl-links-list li {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .msl-link-actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .msl-link-item h3 {
+        font-size: 1.1em;
+    }
+    
+    .msl-modal-header {
+        padding: 20px;
+    }
+    
+    .msl-modal-header h2 {
+        font-size: 1.5em;
+    }
+    
+    .msl-modal-body {
+        padding: 20px;
+    }
+    
+    .msl-modal-body p {
+        font-size: 1em;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .msl-link-item {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .msl-link-item h3 {
+        color: #e2e8f0;
+    }
+    
+    .msl-description {
+        color: #a0aec0;
+    }
+    
+    .msl-stats {
+        color: #718096;
+        border-color: #4a5568;
+    }
+    
+    .msl-intelligent-link {
+        color: #63b3ed;
+    }
+    
+    .msl-intelligent-link:hover {
+        color: #90cdf4;
+    }
+    
+    .msl-links-list li {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .msl-link-title {
+        color: #e2e8f0;
+    }
+    
+    .msl-link-url {
+        color: #a0aec0;
+    }
+}
+
+/* Print styles */
+@media print {
+    #msl-exit-overlay,
+    .msl-loading-overlay {
+        display: none !important;
+    }
+    
+    .msl-link-item {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+    
+    .msl-intelligent-link {
+        color: #000 !important;
+        text-decoration: underline !important;
+    }
+}
+
+/* Accessibility improvements */
+.msl-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.msl-link-item:focus-within {
+    outline: 2px solid #007cba;
+    outline-offset: 2px;
+}
+
+.msl-intelligent-link:focus {
+    outline: 2px solid #007cba;
+    outline-offset: 1px;
+    border-radius: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .msl-link-item {
+        border-width: 2px;
+        border-color: #000;
+    }
+    
+    .msl-intelligent-link {
+        color: #000;
+        font-weight: 700;
+    }
+    
+    .msl-modal-btn-primary {
+        background: #000;
+        border: 2px solid #fff;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .msl-link-item:hover {
+        transform: none;
+    }
+}
